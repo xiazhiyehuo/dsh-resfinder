@@ -1,0 +1,21 @@
+# dsh-resfinder bundle patch
+#
+# 装法一（推荐，走官方 CLI）：
+#   dsh plugin --profile web add link:D:/DeepSeekHarness/home/plugins/dsh-resfinder
+# 装法二（手工）：profile/package.json 加 link: 依赖 + dsh.profile.bundles 里加 "dsh-resfinder"，
+# 再 pnpm install，然后重启 DSH。
+#
+# 本文件只在作为 bundle 被 dsh 载入时生效：注册插件行，并给它一个空的配置位置。
+
+- insert:
+    - id: dsh-resfinder
+      name: 'dsh-resfinder'
+      inject: [tools]
+      config:
+        # 有自建 SearXNG 时填地址（例如 http://127.0.0.1:8888），留空则不启用该源
+        searxUrl: ''
+
+    # 面板单独一行：只依赖 webServer，挂不上也不影响上面的工具
+    - id: dsh-resfinder-ui
+      name: 'dsh-resfinder/ui'
+      inject: [webServer]

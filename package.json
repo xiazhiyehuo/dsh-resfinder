@@ -1,0 +1,58 @@
+{
+  "name": "dsh-resfinder",
+  "version": "0.1.0",
+  "description": "自主型 AI 检索插件：多源检索（Bing/360/GitHub/哔哩哔哩/OpenAlex/Crossref）+ 站点适配器 + 官方渠道判定 + 链接核验 + 本机资源库。零第三方依赖，含 DSH 插件 / CLI / MCP stdio 三种入口。",
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./ui": "./lib/ui.js",
+    "./lib/search": "./lib/search.js",
+    "./lib/sites": "./lib/sites.js",
+    "./lib/verify": "./lib/verify.js",
+    "./lib/channels": "./lib/channels.js",
+    "./lib/store": "./lib/store.js",
+    "./lib/tools": "./lib/tools.js",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "resfinder": "./bin/resfinder.js",
+    "resfinder-mcp": "./mcp/server.js"
+  },
+  "files": [
+    "lib",
+    "bin",
+    "mcp",
+    "skills",
+    "cordis.patch.yml",
+    "README.md",
+    "INSTALL.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "smoke": "node ./scripts/smoke.mjs",
+    "mcp": "node ./mcp/server.js"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "search",
+    "retrieval",
+    "mcp",
+    "resource-finder"
+  ],
+  "license": "MIT",
+  "author": "xiazhijiehuo",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:xiazhijiehuo/dsh-resfinder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xiazhijiehuo/dsh-resfinder/issues"
+  },
+  "homepage": "https://github.com/xiazhijiehuo/dsh-resfinder#readme"
+}
