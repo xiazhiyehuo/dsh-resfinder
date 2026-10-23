@@ -33,7 +33,8 @@ DeepSeek Harness 插件，同时带 CLI 和 MCP 服务。不装依赖，`node` �
 DSH 里是一组 `res_*` 工具，命令行是 `resfinder`，MCP 是 `mcp/server.js`。三者共用同一份 `lib/`，行为一致。
 
 ```bash
-npm i -g dsh-resfinder
+npm i -g dsh-resfinder                          # 命令行
+dsh plugin --profile web add github:xiazhijiehuo/dsh-resfinder   # DSH 插件
 
 resfinder verify https://bit.ly/xxx
 resfinder channels nodejs
@@ -63,3 +64,7 @@ resfinder watch --limit 50 --json
 ## 许可
 
 MIT。
+
+## 改它
+
+`lib/` 是全部实现，`scripts/ci.mjs` 是不联网的断言，`node scripts/smoke.mjs` 会真的发请求跑一遍。

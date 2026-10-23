@@ -1,7 +1,7 @@
 {
   "name": "dsh-resfinder",
   "version": "0.1.0",
-  "description": "自主型 AI 检索插件：多源检索（Bing/360/GitHub/哔哩哔哩/OpenAlex/Crossref）+ 站点适配器 + 官方渠道判定 + 链接核验 + 本机资源库。零第三方依赖，含 DSH 插件 / CLI / MCP stdio 三种入口。",
+  "description": "判断链接能不能用、什么时候会坏掉：核验落地域名与证书、给官方下载渠道、巡检失效链接。DSH 插件 + CLI + MCP。",
   "type": "module",
   "main": "./lib/index.js",
   "exports": {
@@ -37,13 +37,13 @@
     "mcp": "node ./mcp/server.js"
   },
   "keywords": [
-    "dsh",
     "dsh-plugin",
     "deepseek-harness",
-    "search",
-    "retrieval",
+    "link-verification",
+    "url-check",
+    "official-source",
     "mcp",
-    "resource-finder"
+    "security"
   ],
   "license": "MIT",
   "author": "xiazhijiehuo",

@@ -1,20 +1,22 @@
-# 安装说明
+# 安装
 
-三种用法，按 agent 形态选一种。零第三方依赖，需要 Node >= 20。
+Node 20 以上，不用装任何依赖。
 
-## 1. 全局命令
+## 当命令用
 
 ```bash
-npm install -g dsh-resfinder
-resfinder sources
-resfinder verify https://bit.ly/xxx --json
-resfinder channels nodejs
-resfinder watch --limit 50 --json
+npm i -g dsh-resfinder
+
+resfinder sources                                # 看哪些源能用
+resfinder verify https://bit.ly/xxx              # 核验一个链接
+resfinder verify https://某篇教程 --from-page ...
+resfinder channels nodejs                        # 官方入口在哪
+resfinder watch --limit 50                       # 巡检库里的链接
 ```
 
-约定：**全部命令支持 `--json`**；正文走 stdout，错误走 stderr 且退出码非 0。
+加 `--json` 输出结构化结果，方便脚本或 agent 直接读。正文走 stdout，错误走 stderr，失败退出码非 0。
 
-## 2. MCP 客户端
+## 接 MCP 客户端
 
 ```jsonc
 {
@@ -24,41 +26,47 @@ resfinder watch --limit 50 --json
 }
 ```
 
-JSON-RPC 2.0 over stdio，方法：`initialize` / `tools/list` / `tools/call`。
-暴露 `res_read` `res_channels` `res_verify` `res_save` `res_library` `res_watch` `res_sources`
-（另有两个检索工具 `res_search` / `res_dig`，默认启用；与搜索类插件共存时可关，见下）。
+走 stdio，方法是 `initialize` / `tools/list` / `tools/call`。
 
-## 3. DSH 插件
+## 装进 DSH
 
 ```bash
 dsh plugin --profile web add github:xiazhijiehuo/dsh-resfinder
 ```
 
-只想用核验/渠道/巡检、把搜索留给别的插件：
+装完在 `http://127.0.0.1:3080/resfinder` 有面板。
+
+如果搜索已经交给别的插件，把自带的两个检索工具关掉：
 
 ```yaml
 - id: dsh-resfinder
   config:
-    enableSearch: false   # 不注册 res_search / res_dig
+    enableSearch: false
 ```
 
-Web 面板在 `http://127.0.0.1:3080/resfinder`。
+剩下 `res_read` `res_verify` `res_channels` `res_save` `res_library` `res_watch` `res_sources` 七个，各管各的。
 
-## 数据位置
+## 数据在哪
 
-`$DSH_HOME/resfinder/`（未设则 `~/.dsh/resfinder/`，可用 `RESFINDER_HOME` 覆盖）：
-`library.jsonl` 资源库 · `cache.json` 缓存 · `metrics.json` 来源质量 · `watch-history.jsonl` 巡检历史。
+默认 `~/.dsh/resfinder/`，设了 `DSH_HOME` 就跟过去，也可以单独用 `RESFINDER_HOME` 指。
 
-## 网络前提（2026-10 实测）
+- `library.jsonl` — 存过并核验过的链接
+- `cache.json` — 检索和读页的缓存
+- `metrics.json` — 各检索源的产出率、耗时
+- `watch-history.jsonl` — 每次巡检的记录
 
-- 免 key 可用：Bing、360、GitHub、npm、crates.io、Stack Overflow、哔哩哔哩（wbi 签名）、OpenAlex、Crossref
-- 不通：DuckDuckGo、公共 SearXNG 实例、`export.arxiv.org`
-- 需 key：Tavily `TAVILY_API_KEY` · Brave `BRAVE_API_KEY` · SearXNG `SEARXNG_URL`
-- `GITHUB_TOKEN` 可选：GitHub API 配额 60 → 5000 次/小时
+## 环境变量
 
-## 自检
+| 变量 | 作用 |
+| --- | --- |
+| `TAVILY_API_KEY` | 启用 Tavily 检索 |
+| `BRAVE_API_KEY` | 启用 Brave 检索 |
+| `SEARXNG_URL` | 接自建 SearXNG |
+| `GITHUB_TOKEN` | GitHub API 配额 60 → 5000 次/小时 |
+
+## 自己跑测试
 
 ```bash
-node scripts/smoke.mjs      # 22 项，含真实网络请求
-node scripts/preview.mjs 3099   # 预览 Web 面板
+node scripts/ci.mjs         # 离线断言，不联网
+node scripts/smoke.mjs      # 联网冒烟，22 项
 ```
