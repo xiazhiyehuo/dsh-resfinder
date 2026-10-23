@@ -1,63 +1,65 @@
 # dsh-resfinder
 
-[![ci](https://github.com/xiazhijiehuo/dsh-resfinder/actions/workflows/ci.yml/badge.svg)](https://github.com/xiazhijiehuo/dsh-resfinder/actions/workflows/ci.yml)
+判断一个链接能不能用，以及它什么时候会坏掉。
 
-**来源可信度工具** · 判断一个链接到底能不能用、什么时候会烂掉。
+DeepSeek Harness 插件，同时带 CLI 和 MCP 服务。不装依赖，`node` 能跑就行。
 
-DeepSeek Harness 插件 + 独立 CLI + MCP 服务，零第三方依赖。
+搜索有专门的插件在做（[dsh-free-search](https://www.npmjs.com/package/dsh-free-search)、[@liustack/modsearch](https://www.npmjs.com/package/@liustack/modsearch)），这个插件只管搜到之后的事。
 
-> 这不是又一个搜索插件。搜索交给 [`dsh-free-search`](https://www.npmjs.com/package/dsh-free-search) 或 [`@liustack/modsearch`](https://www.npmjs.com/package/@liustack/modsearch)；本插件负责**搜到之后**的事：这个来源可信吗？官方下载在哪？链接有没有悄悄换掉？
+## 为什么需要它
 
-## 它解决什么
+搜索结果里排前面的经常是仿冒站，官网会换域名，发布页过一阵就 404。名字对、页面像，点进去下载——这是找资源最容易踩的坑，人和 agent 都一样。
 
-搜索引擎会把仿冒站排到前面，官网会换域名，发布页会 404。agent 和人一样，看到"名字对、页面像"就点了——这是找资源时最主要的风险来源。
+## 三个主要工具
 
-三个动作：
+**`res_verify`** — 跟着跳转链走到底，看最终落在哪个域名，再看 TLS 证书，给一个档位：`official` / `trusted` / `unknown` / `suspicious`。每个结论都带判据，不是一句"安全"。
 
-| 工具 | 作用 |
-| --- | --- |
-| `res_verify` | 跳转链 + 最终域名 + TLS 证书 → `official` / `trusted` / `unknown` / `suspicious` 四档，附判据；支持 SHA256 比对 |
-| `res_channels` | 资源名 → 官方渠道（官网 / Releases / 应用商店 / 正版图书馆），25 条登记表；未登记就给检索式与判据，不编链接 |
-| `res_watch` | 巡检库内链接：和历史比对，只报变化（`down` / `domain-changed` / `downgraded` / `tls-warning` / `up`） |
-| `res_verify --from-page` | **页面链接体检**：抓一篇教程/合集页上的所有外链逐条核验，把可疑的挑出来（最危险的不是文章，是它给的下载链接） |
+加 `fromPage` 可以体检整个页面：把教程页里的外链全抓出来逐条核验，可疑的排在最前面。文章往往没问题，它给的下载链接才是问题。
 
-配套：`res_read`（中文站点适配：B 站 wbi 搜索与播放页、豆瓣条目、arXiv、GitHub 仓库；其余走正文抽取）、`res_save` / `res_library`（资源库）、`res_sources`（自述能力与近期来源质量）。
+**`res_channels`** — 报一个资源名，直接给官方入口：官网、GitHub Releases、应用商店、正版书库。目前登记了 25 条，没登记的会给出检索式，不会瞎猜链接。
+
+**`res_watch`** — 拿库里的链接再过一遍，跟上次比，只报变化：挂了、落地域名换了、可信档位掉了、证书不对了。
+
+另外还有 `res_read`（读网页正文，B 站、豆瓣、arXiv、GitHub 仓库有专门的解析）、`res_save` / `res_library`（存和查）、`res_sources`（看当前哪些源能用）。
 
 ## 截图
 
-> `http://127.0.0.1:3080/resfinder` — 搜索 / 读正文 / 核验域名 / 存进库 / 一键巡检
-
 ![面板](docs/panel.png)
+
+`http://127.0.0.1:3080/resfinder`
 
 ## 三个入口
 
-| 入口 | 文件 | 给谁用 |
-| --- | --- | --- |
-| DSH 插件 | `lib/index.js` | DeepSeek Harness 会话内的 `res_*` 工具 |
-| CLI | `bin/resfinder.js` | 任意能跑命令的 agent，全部支持 `--json` |
-| MCP stdio | `mcp/server.js` | Claude Desktop / Cursor / 自研 agent |
+DSH 里是一组 `res_*` 工具，命令行是 `resfinder`，MCP 是 `mcp/server.js`。三者共用同一份 `lib/`，行为一致。
 
 ```bash
-npm install -g dsh-resfinder      # 或 npm i -g ./dsh-resfinder-*.tgz
+npm i -g dsh-resfinder
+
 resfinder verify https://bit.ly/xxx
 resfinder channels nodejs
 resfinder watch --limit 50 --json
 ```
 
-## 设计取舍
+所有命令都支持 `--json`，正文走 stdout，错误走 stderr，失败退出码非 0。
 
-- **核验只认客观事实**：跳转链、最终域名、TLS。域名名单只用来给档位，"看起来像"不作为结论依据；入口可疑 + 落地未知 → 仍判可疑，不让"跳一次就洗白"。
-- **记忆分两层**：缓存（检索 30 分钟 / 读页 6 小时，过期不命中）+ 资源库（只放 verify 过的）。过期记忆比没记忆更危险。
-- **告警宁可少报**：连接层失败先退 700ms 重试一次，只有重试也失败才判 `down`——误报会让人再也不信告警。
-- **失败如实上报**：B 站搜索被风控就说失败，不伪装成"没找到"。
-- **不碰盗版**：只给正版与公开授权渠道。
+## 几个设计选择
 
-## 边界
+**只看能验证的东西。** 跳转链、落地域名、证书，这三样是客观的。域名白名单只用来定档位，"页面看着像官网"不作为证据。入口可疑、落地地址又不认识，就还是可疑——不会因为跳转一次就洗白。
 
-- 不做全站爬虫，只读给定 URL。
-- 不提供破解、盗版书影音、账号共享类渠道。
-- 核验结论只在证据支持的范围里：`unknown` 就是 `unknown`，不替你升级成"安全"。
+**记忆分两层。** 搜索结果在缓存里放一会儿（检索 30 分钟，读页 6 小时），过期就不算命中；资源库是另一回事，只放核验过的东西。两层的语义不混。
+
+**告警少报一点。** 连接失败先等 700 毫秒重试一次，还是不行才判挂掉。误报几次之后，就没人看告警了。
+
+**失败就说失败。** B 站搜索被风控会直接报错，不会显示成"没找到"。
+
+## 网络环境
+
+免 key 能用的：Bing、360、GitHub、npm、crates.io、Stack Overflow、哔哩哔哩、OpenAlex、Crossref。
+
+直连不通的：DuckDuckGo、公共 SearXNG、`export.arxiv.org`。
+
+需要 key：Tavily、Brave。另外 `GITHUB_TOKEN` 能把 GitHub API 配额从 60 次/小时提到 5000。
 
 ## 许可
 
-MIT。第三方内容版权归原站点，引用时标注来源与抓取时间。
+MIT。
